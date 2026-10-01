@@ -1,0 +1,77 @@
+package com.example.nutrimind;
+
+import android.content.Intent;
+import android.os.Bundle;
+import android.widget.Button;
+import android.widget.TextView;
+
+import androidx.activity.EdgeToEdge;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.cardview.widget.CardView;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
+
+public class HomeActivity extends AppCompatActivity {
+
+    CardView cardStressRelief, cardNutritionPlans, cardFeelingsDiary;
+    Button cardLogout;
+    TextView txtMood;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        EdgeToEdge.enable(this);
+        setContentView(R.layout.activity_home);
+
+        // UI padding fix
+        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
+            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
+            return insets;
+        });
+
+        // Views
+        cardStressRelief = findViewById(R.id.cardVoice);
+        cardNutritionPlans = findViewById(R.id.cardPlans);
+        cardFeelingsDiary = findViewById(R.id.cardFeelingsDiary);
+        cardLogout = findViewById(R.id.cardLogout);
+        txtMood = findViewById(R.id.txtMood);
+
+        // Load mood
+        String mood = getSharedPreferences("NutriMindPrefs", MODE_PRIVATE)
+                .getString("latestMood", "😊 Calm");
+
+        txtMood.setText(mood);
+
+        // Click events
+        cardStressRelief.setOnClickListener(v ->
+                startActivity(new Intent(this, StressRelief.class))
+        );
+
+        cardNutritionPlans.setOnClickListener(v ->
+                startActivity(new Intent(this, NutritionPlans.class))
+        );
+
+        cardFeelingsDiary.setOnClickListener(v ->
+                startActivity(new Intent(this, FeelingDiary.class))
+        );
+
+        cardLogout.setOnClickListener(v -> {
+            Intent i = new Intent(this, Login.class);
+            i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+            startActivity(i);
+        });
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+
+        // refresh mood when user comes back from voice page
+        String mood = getSharedPreferences("NutriMindPrefs", MODE_PRIVATE)
+                .getString("latestMood", "😊 Calm");
+
+        txtMood.setText(mood);
+    }
+}
