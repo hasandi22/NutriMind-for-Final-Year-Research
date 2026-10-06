@@ -18,6 +18,10 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.google.firebase.firestore.FirebaseFirestore;
 
+//added to make diary inputs visible for that usr only
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -33,6 +37,9 @@ public class FeelingDiary extends AppCompatActivity {
     private Button btnSaveEntry, btnViewPastDiary, btnUpdateDiary, btnDeleteDiary, btnBackToHome;
     private FirebaseFirestore db;
 
+    //for firebase -only one input
+    private FirebaseAuth mAuth;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -40,6 +47,7 @@ public class FeelingDiary extends AppCompatActivity {
 
         // Initialize Firebase Firestore
         db = FirebaseFirestore.getInstance();
+        mAuth = FirebaseAuth.getInstance();
 
         // Link UI components
         etFeelingEntry = findViewById(R.id.etFeelingEntry);
@@ -84,26 +92,47 @@ public class FeelingDiary extends AppCompatActivity {
     }
 
     private void saveDiaryEntry() {
-        String feelingText = etFeelingEntry.getText().toString();
+        String feelingText = etFeelingEntry.getText().toString().trim();
 
         if (feelingText.isEmpty()) {
             Toast.makeText(this, "Please write something!", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        // Create a diary entry object
+        // Get currently logged-in Firebase user
+        FirebaseUser currentUser = mAuth.getCurrentUser();
+
+        if (currentUser == null) {
+            Toast.makeText(this, "Please login first.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // Get unique Firebase UID
+        String userId = currentUser.getUid();
+
+        // Create diary entry
         Map<String, Object> diaryEntry = new HashMap<>();
         diaryEntry.put("feeling", feelingText);
         diaryEntry.put("timestamp", System.currentTimeMillis());
+        diaryEntry.put("userId", userId);
 
-        // Store in Firestore
-        db.collection("diaryEntries").add(diaryEntry)
+        // Store diary entry in Firestore
+        db.collection("diaryEntries")
+                .add(diaryEntry)
                 .addOnSuccessListener(documentReference -> {
                     Toast.makeText(this, "Entry saved!", Toast.LENGTH_SHORT).show();
+
                     callMoodAPI(feelingText);
-                    etFeelingEntry.setText(""); // Clear input field
+
+                    etFeelingEntry.setText("");
                 })
-                .addOnFailureListener(e -> Toast.makeText(this, "Error saving entry!", Toast.LENGTH_SHORT).show());
+                .addOnFailureListener(e ->
+                        Toast.makeText(
+                                this,
+                                "Error saving entry!",
+                                Toast.LENGTH_SHORT
+                        ).show()
+                );
     }
 
     private void callMoodAPI(String feelingText) {
@@ -138,7 +167,9 @@ public class FeelingDiary extends AppCompatActivity {
                         message.setTextSize(16);
 
                         // 🎨 COLOR TEXT BASED ON EMOTION
-                        message.setTextColor(getEmotionColor(emotion));
+                        //message.setTextColor(getEmotionColor(emotion));
+                        // Set text color so it is clearly visible
+                        message.setTextColor(android.graphics.Color.BLACK);
 
                         // 🎯 MOOD BAR (simple visual)
                         android.widget.ProgressBar moodBar = new android.widget.ProgressBar(
@@ -182,6 +213,21 @@ public class FeelingDiary extends AppCompatActivity {
                         }
 
                         dialog.show();
+
+                        TextView title = dialog.findViewById(
+                                androidx.appcompat.R.id.alertTitle
+                        );
+
+                        if (title != null) {
+                            title.setTextColor(android.graphics.Color.BLACK);
+                        }
+
+                        Button positiveButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
+
+                        if (positiveButton != null) {
+                            positiveButton.setTextColor(android.graphics.Color.BLACK);
+                        }
+
                     }
                 }
             }
